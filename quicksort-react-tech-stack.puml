@@ -1,0 +1,77 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+!define AWSPuml c:/dev/projects/aws-icons-for-plantuml/dist
+!include AWSPuml/AWSCommon.puml
+!include AWSPuml/AWSSimplified.puml
+
+!include AWSPuml/Compute/LambdaLambdaFunction.puml
+!include AWSPuml/Compute/Lightsail.puml
+!include AWSPuml/General/User.puml
+!include AWSPuml/General/Gear.puml
+!include AWSPuml/FrontEndWebMobile/FrontEndWebMobile.puml
+!include AWSPuml/ApplicationIntegration/APIGateway.puml
+!include AWSPuml/Storage/SimpleStorageService.puml
+!include AWSPuml/Groups/AWSCloud.puml
+!include AWSPuml/Groups/Generic.puml
+!include AWSPuml/DeveloperTools/CodeBuild.puml
+!include AWSPuml/DeveloperTools/CodeArtifact.puml
+!include AWSPuml/DeveloperTools/CodeCommit.puml
+
+!include <logos/github-actions>
+!include <logos/github>
+
+'left to right direction
+'top to bottom direction
+
+User(qsUser, "Quicksort User", "")
+
+AWSCloudGroup(cloud, AWS) {
+
+    User(qsOps, Ops User, )
+    Lightsail(qsAppHost, App Host, )
+    FrontEndWebMobile(qsReactApp, Quicksort React App, )
+    SimpleStorageService(qsAppBucket, App bucket, )
+    SimpleStorageService(qsApiBucket, API bucket, )
+    APIGateway(qsApiApiGateway, Quicksort API, )
+    LambdaLambdaFunction(qsApiLambdaFunction, Spring Boot Quicksort REST API, )
+    Gear(qsLibrary, Quicksort Library, )
+}
+
+qsAppBucket -r-> qsAppHost #line.dashed
+qsApiBucket -r-> qsApiLambdaFunction #line.dashed
+qsOps -l-> qsAppHost #line.dashed
+qsOps --> qsApiLambdaFunction #line.dashed : deploy
+qsUser --> qsAppHost : app.jamieburns.me/quicksort
+qsAppHost -r-> qsReactApp #line.dashed
+qsUser --> qsReactApp #line.dashed : sort
+qsReactApp --> qsApiApiGateway : api.jamieburns.me/quicksort
+qsApiApiGateway --> qsApiLambdaFunction
+qsApiLambdaFunction --> qsLibrary
+
+rectangle "<$github>" {
+
+    rectangle "$CodeCommitIMG()\nQuicksort Library\nRepository" as libraryRepository
+    together {
+        rectangle "$CodeCommitIMG()\nQuicksort Spring Boot\nRepository" as apiRepository
+        rectangle "$CodeCommitIMG()\nQuicksort React\nRepository" as appRepository
+    }
+    rectangle "<$github-actions>\nQuicksort Library\nActions" as libraryActions
+    rectangle "<$github-actions>\nQuicksort API\nActions" as apiActions
+    rectangle "<$github-actions>\nQuicksort App\nActions" as appActions
+    rectangle "$CodeArtifactIMG()\nQuicksort Library\nPackages" as libraryPackages
+    rectangle "$CodeArtifactIMG()\nQuicksort API\nPackages" as apiPackages
+}
+
+libraryRepository --> libraryActions #line.dashed
+libraryActions --> libraryPackages #line.dashed
+libraryPackages -u-> apiActions #line.dashed
+
+apiRepository --> apiActions #line.dashed
+apiActions --> apiPackages #line.dashed
+apiActions --> qsApiBucket #line.dashed
+
+appRepository --> appActions #line.dashed
+appActions -l-> qsAppBucket #line.dashed
+
+@enduml
